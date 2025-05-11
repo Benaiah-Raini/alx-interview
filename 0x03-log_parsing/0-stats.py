@@ -1,42 +1,39 @@
 #!/usr/bin/python3
-'''
-a script that reads stdin line by line and computes metrics
-'''
+"""
+Log parsing
+"""
+
 import sys
-import re
 
+if __name__ == '__main__':
 
-if __name__ == "__main__":
-    total_size = 0
-    code_count = {"200": 0, "301": 0, "400": 0,
-                  "401": 0, "403": 0, "404": 0, "405": 0, "500": 0}
+    filesize, count = 0, 0
+    codes = ["200", "301", "400", "401", "403", "404", "405", "500"]
+    stats = {k: 0 for k in codes}
+
+    def print_stats(stats: dict, file_size: int) -> None:
+        print("File size: {:d}".format(filesize))
+        for k, v in sorted(stats.items()):
+            if v:
+                print("{}: {}".format(k, v))
+
     try:
-        while True:
-            line = sys.stdin.readline()
-            if not line:
-                break
-            for i in range(10):
-                data = sys.stdin.readline()
-                if not data:
-                    break
-                info = str(data).replace('"', "")
-                info = info.replace("\n", "")
-                log_data = info.split(" ")
-                if len(log_data) == 9 and \
-                   log_data[-1].isdigit() \
-                   and log_data[-2].isdigit()\
-                   and log_data[-2] in code_count:
-                    file_size = int(log_data[-1])
-                    total_size += file_size
-                    code_count[log_data[-2]] += 1
-                else:
-                    i -= 1
-            print("File size: {}".format(total_size))
-            for code in code_count:
-                if code_count[code] > 0:
-                    print("{}: {}".format(code, code_count[code]))
+        for line in sys.stdin:
+            count += 1
+            data = line.split()
+            try:
+                status_code = data[-2]
+                if status_code in stats:
+                    stats[status_code] += 1
+            except BaseException:
+                pass
+            try:
+                filesize += int(data[-1])
+            except BaseException:
+                pass
+            if count % 10 == 0:
+                print_stats(stats, filesize)
+        print_stats(stats, filesize)
     except KeyboardInterrupt:
-        print("File size: {}".format(total_size))
-        for code in code_count:
-            if code_count[code] > 0:
-                print("{}: {}".format(code, code_count[code]))
+        print_stats(stats, filesize)
+        raise
